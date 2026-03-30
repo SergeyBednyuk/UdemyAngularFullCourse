@@ -35,12 +35,23 @@ export class AvailablePlacesComponent implements OnInit {
                 next: (response) => {
                     this.places.set(response);
                 },
-                error: (err : Error) => {
+                error: (err: Error) => {
                     this.error.set(err.message);
                 },
                 complete: () => {
                     this.isFetching.set(false);
                 }
             });
+
+        this.destroyRef.onDestroy(() => subscription.unsubscribe());
+    }
+
+    onSelectPlace(selectedPlace: Place) {
+        const subscription = this.httpClient.put('http://localhost:3000/user-places', { placeId: selectedPlace.id })
+            .subscribe((response) => {
+                console.log(response);
+            });
+
+        this.destroyRef.onDestroy(() => subscription.unsubscribe());
     }
 }
