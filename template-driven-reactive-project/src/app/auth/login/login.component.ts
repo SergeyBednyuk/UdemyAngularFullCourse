@@ -1,55 +1,60 @@
-import { afterNextRender, Component, DestroyRef, inject, viewChild } from '@angular/core';
-import { FormsModule, NgForm } from "@angular/forms";
-import { debounceTime } from "rxjs";
+import { Component } from '@angular/core';
+import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { of } from "rxjs";
+
+function mustContainsQuestionMark(control: AbstractControl) {
+    if (control.value.includes('?')) {
+        return null;
+    }
+    return { doesNotContainQuestionMark: true };
+}
+
+function isEmailUnique(control: AbstractControl) {
+    if (control.value !== 'test@example.com') {
+        return of(null);
+    }
+    return of({ IsEmailUnique: false });
+}
 
 @Component({
     selector: 'app-login',
     standalone: true,
+    imports: [ReactiveFormsModule],
     templateUrl: './login.component.html',
     styleUrl: './login.component.css',
-    imports: [
-        FormsModule
-    ]
 })
 export class LoginComponent {
-    private form = viewChild.required<NgForm>('form');
-    private destroyRef = inject(DestroyRef);
+    myForm = new FormGroup({
+        myEmail: new FormControl('', {
+            validators: [Validators.required, Validators.email],
+            asyncValidators: [isEmailUnique]
+        }),
+        myPassword: new FormControl('', {
+            validators: [Validators.required, Validators.minLength(6), mustContainsQuestionMark]
+        })
+    });
 
-    constructor() {
-        const savedForm = window.localStorage.getItem('saved-login-form');
-
-        if (savedForm) {
-            const loadedFormData = JSON.parse(savedForm);
-            const savedEmail = loadedFormData.email;
-            setTimeout(() => {
-                this.form().controls['emailInpt'].setValue(savedEmail);
-            }, 5);
-        }
-
-        afterNextRender(() => {
-            const subscription = this.form().valueChanges?.pipe(debounceTime(500)).subscribe({
-                next: (value) =>
-                    window.localStorage.setItem('saved-login-form', JSON.stringify({ email: value.emailInpt }))
-            });
-
-            this.destroyRef.onDestroy(() => subscription?.unsubscribe());
-        });
+    get EmailIsValid() {
+        return (
+            this.myForm.controls.myEmail.touched &&
+            this.myForm.controls.myEmail.dirty &&
+            this.myForm.controls.myEmail.invalid
+        );
     }
 
+    get PasswordIsValid() {
+        return (
+            this.myForm.controls.myPassword.touched &&
+            this.myForm.controls.myPassword.dirty &&
+            this.myForm.controls.myPassword.invalid
+        );
+    }
 
-    onSubmit(formData: NgForm) {
-        if (formData.form.invalid) {
-            return;
-        }
-
-        const enteredEmail = formData.form.value.emailInpt;
-        const enteredPassword = formData.form.value.psswrdInpt;
-
-        console.log(formData.form.status);
-        console.log(formData.form);
-        console.log('EMAIL:' + enteredEmail);
-        console.log('PASSWORD:' + enteredPassword);
-
-        formData.form.reset();
+    onSubmit() {
+        console.log(this.myForm);
+        const email = this.myForm.value.myEmail;
+        const password = this.myForm.controls.myPassword.value;
+        console.log(email);
+        console.log(password);
     }
 }
