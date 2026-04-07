@@ -5,7 +5,7 @@ import {
   withRouterConfig,
 } from '@angular/router';
 
-import { routes } from './app.routs';
+import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {
   providers: [
