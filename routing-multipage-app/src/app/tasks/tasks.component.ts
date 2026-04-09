@@ -2,7 +2,8 @@ import { Component, computed, DestroyRef, inject, input, OnInit } from '@angular
 
 import { TaskComponent } from './task/task.component';
 import { TasksService } from './tasks.service';
-import { ActivatedRoute, RouterLink } from "@angular/router";
+import { ActivatedRoute, ResolveFn, RouterLink } from "@angular/router";
+import { TaskModel } from "./Task.model";
 
 @Component({
     selector: 'app-tasks',
@@ -11,32 +12,29 @@ import { ActivatedRoute, RouterLink } from "@angular/router";
     styleUrl: './tasks.component.css',
     imports: [TaskComponent, RouterLink],
 })
-export class TasksComponent implements OnInit {
+export class TasksComponent {
+    userTasks = input.required<TaskModel[]>();
     userId = input.required<string>();
-    // order = input<'asc' | 'desc'>();
-    order?: 'asc' | 'desc';
-    private tasksService = inject(TasksService);
-    private activatedRoute = inject(ActivatedRoute);
-    private destroyRef = inject(DestroyRef);
-    userTasks = computed(() =>
-        this.tasksService.allTasks()
-            .filter((u) => u.userId === this.userId())
-            .sort((a, b) => {
-                if (this.order === 'desc') {
-                    return a.id > b.id ? -1 : 1
-                } else {
-                    return a.id > b.id ? 1 : -1
-                }
-            })
-    );
-
-    ngOnInit() {
-        const subscription = this.activatedRoute.queryParams.subscribe({
-            next: params => {
-                this.order = params['order'];
-            }
-        })
-
-        this.destroyRef.onDestroy(() => subscription.unsubscribe());
-    }
+    order = input<'asc' | 'desc' | undefined>();
 }
+
+export const resolveUserTasks: ResolveFn<TaskModel[]> = (
+    activatedRouteSnapshot,
+    routerState
+) => {
+    const order = activatedRouteSnapshot.queryParams['order'];
+    const tasksService = inject(TasksService);
+    const tasks = tasksService
+        .allTasks()
+        .filter(
+            (task) => task.userId === activatedRouteSnapshot.paramMap.get('userId')
+        );
+
+    if (order && order === 'asc') {
+        tasks.sort((a, b) => (a.id > b.id ? 1 : -1));
+    } else {
+        tasks.sort((a, b) => (a.id > b.id ? -1 : 1));
+    }
+
+    return tasks.length ? tasks : [];
+};
