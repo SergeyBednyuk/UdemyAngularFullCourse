@@ -1,5 +1,12 @@
-import { Component, computed, DestroyRef, inject, input, OnInit } from '@angular/core';
-import { ActivatedRoute, RouterLink, RouterOutlet } from "@angular/router";
+import { Component, DestroyRef, inject, input, OnInit } from '@angular/core';
+import {
+    ActivatedRoute,
+    ActivatedRouteSnapshot,
+    ResolveFn,
+    RouterLink,
+    RouterOutlet,
+    RouterStateSnapshot
+} from "@angular/router";
 
 import { UsersService } from "../users.service";
 
@@ -13,28 +20,22 @@ import { UsersService } from "../users.service";
         RouterLink
     ]
 })
-export class UserTasksComponent implements OnInit {
+export class UserTasksComponent {
     userId = input.required<string>();
-    userName = '';
-    private usersService = inject(UsersService);
-    private activatedRoute = inject(ActivatedRoute);
-    private destroyRef = inject(DestroyRef);
+    userName = input.required<string>();
+    // Static data from route
+    message = input.required<string>();
 
-    // userName = computed(() =>
-    //     this.usersService.users.find(u => u.id === this.userId())?.name
-    // );
-
-    ngOnInit() {
-        console.log(this.activatedRoute.snapshot);
-        const subscription =  this.activatedRoute.paramMap.subscribe({
-            next:
-                paramMap =>
-                    this.userName = this.usersService.users.find(
-                        u => u.id === paramMap.get('userId')
-                    )?.name || '',
-
-        });
-
-        this.destroyRef.onDestroy(() => subscription.unsubscribe());
-    }
 }
+
+export const resolveUserName: ResolveFn<string> = (activatedRoute: ActivatedRouteSnapshot, routerState: RouterStateSnapshot) => {
+    const usersService = inject(UsersService);
+    return usersService.users.find(
+        u => u.id === activatedRoute.paramMap.get('userId')
+    )?.name || '';
+};
+
+// Page Title resolver
+export const resolveTitle: ResolveFn<string> = (activatedRoute: ActivatedRouteSnapshot, routerState: RouterStateSnapshot) => {
+    return resolveUserName(activatedRoute, routerState) + '\'s Tasks';
+};

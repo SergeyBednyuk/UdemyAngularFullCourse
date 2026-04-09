@@ -16,6 +16,7 @@ export class NewTaskComponent {
     enteredTitle = signal('');
     enteredSummary = signal('');
     enteredDate = signal('');
+    submitted = false;
     private tasksService = inject(TasksService);
     private router = inject(Router);
 
@@ -28,6 +29,8 @@ export class NewTaskComponent {
             },
             this.userId()
         );
+
+        this.submitted = true;
 
         this.router.navigate(['/users', this.userId(), 'tasks'], {
             replaceUrl: true
